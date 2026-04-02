@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { useRef } from 'react';
 import { FilePreview, getFileIcon } from '@/components/FilePreview';
+import { AudioPlayer } from '@/components/AudioPlayer';
 
 interface FileItem {
   name: string;
