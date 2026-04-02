@@ -5,9 +5,10 @@ import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import {
-  Upload, Download, Trash2, LogOut, HardDrive, FileVideo, FileText, Package, File, Shield,
+  Upload, Download, Trash2, LogOut, HardDrive, Shield,
 } from 'lucide-react';
 import { useRef } from 'react';
+import { FilePreview, getFileIcon } from '@/components/FilePreview';
 
 interface FileItem {
   name: string;
