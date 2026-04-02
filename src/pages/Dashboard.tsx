@@ -19,13 +19,6 @@ interface FileItem {
 
 const BUCKET = 'lomba-drive';
 
-function getFileIcon(name: string) {
-  const ext = name.split('.').pop()?.toLowerCase() || '';
-  if (['mp4', 'avi', 'mov', 'mkv', 'webm'].includes(ext)) return <FileVideo className="w-5 h-5 text-primary" />;
-  if (['pdf', 'doc', 'docx', 'txt', 'xls', 'xlsx', 'ppt'].includes(ext)) return <FileText className="w-5 h-5 text-secondary" />;
-  if (['apk', 'exe', 'dmg', 'zip', 'rar', '7z', 'tar'].includes(ext)) return <Package className="w-5 h-5 text-primary" />;
-  return <File className="w-5 h-5 text-muted-foreground" />;
-}
 
 const Dashboard = ({ onLogout }: { onLogout: () => void }) => {
   const [files, setFiles] = useState<FileItem[]>([]);
