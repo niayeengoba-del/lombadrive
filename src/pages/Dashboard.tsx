@@ -27,6 +27,17 @@ const Dashboard = ({ onLogout }: { onLogout: () => void }) => {
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [audioTrack, setAudioTrack] = useState<{ url: string; title: string } | null>(null);
+
+  // Listen for audio play events from FilePreview
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      setAudioTrack({ url: detail.url, title: detail.title });
+    };
+    window.addEventListener('lomba-play-audio', handler);
+    return () => window.removeEventListener('lomba-play-audio', handler);
+  }, []);
 
   const fetchFiles = useCallback(async () => {
     const { data, error } = await supabase.storage.from(BUCKET).list('files', {
