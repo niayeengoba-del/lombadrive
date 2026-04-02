@@ -179,20 +179,23 @@ const Dashboard = ({ onLogout }: { onLogout: () => void }) => {
           ) : (
             files.map((file) => (
               <Card key={file.id} className="bg-card border-border">
-                <CardContent className="p-3 flex items-center gap-3">
-                  {getFileIcon(file.name)}
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{file.name}</p>
-                    <p className="text-xs text-muted-foreground">{formatFileSize(file.size)}</p>
+                <CardContent className="p-3 space-y-0">
+                  <div className="flex items-center gap-3">
+                    {getFileIcon(file.name)}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{file.name}</p>
+                      <p className="text-xs text-muted-foreground">{formatFileSize(file.size)}</p>
+                    </div>
+                    <div className="flex gap-1">
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-secondary hover:text-secondary" onClick={() => handleDownload(file.name)} title="Jippinde (Download)">
+                        <Download className="w-4 h-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => handleDelete(file.name)} title="Supprimer">
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
                   </div>
-                  <div className="flex gap-1">
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-secondary hover:text-secondary" onClick={() => handleDownload(file.name)} title="Jippinde (Download)">
-                      <Download className="w-4 h-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => handleDelete(file.name)} title="Supprimer">
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
+                  <FilePreview fileName={file.name} />
                 </CardContent>
               </Card>
             ))
