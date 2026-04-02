@@ -126,7 +126,7 @@ const Dashboard = ({ onLogout }: { onLogout: () => void }) => {
                 <span className="font-semibold text-sm">Stockage</span>
               </div>
               <span className="text-xs text-muted-foreground">
-                {formatFileSize(totalUsed)} / 30 GB
+                {formatFileSize(totalUsed)} / 1000 GB
               </span>
             </div>
             <Progress value={usedPercent} className="h-3 bg-muted [&>div]:bg-gradient-to-r [&>div]:from-primary [&>div]:to-secondary" />
