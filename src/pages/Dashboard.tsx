@@ -214,6 +214,15 @@ const Dashboard = ({ onLogout }: { onLogout: () => void }) => {
           )}
         </div>
       </div>
+
+      {/* Persistent Audio Player */}
+      {audioTrack && (
+        <AudioPlayer
+          src={audioTrack.url}
+          title={audioTrack.title}
+          onClose={() => setAudioTrack(null)}
+        />
+      )}
     </div>
   );
 };
