@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { useRef } from 'react';
 import { FilePreview, getFileIcon } from '@/components/FilePreview';
+import { AudioPlayer } from '@/components/AudioPlayer';
 
 interface FileItem {
   name: string;
@@ -26,6 +27,17 @@ const Dashboard = ({ onLogout }: { onLogout: () => void }) => {
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [audioTrack, setAudioTrack] = useState<{ url: string; title: string } | null>(null);
+
+  // Listen for audio play events from FilePreview
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      setAudioTrack({ url: detail.url, title: detail.title });
+    };
+    window.addEventListener('lomba-play-audio', handler);
+    return () => window.removeEventListener('lomba-play-audio', handler);
+  }, []);
 
   const fetchFiles = useCallback(async () => {
     const { data, error } = await supabase.storage.from(BUCKET).list('files', {
@@ -126,7 +138,7 @@ const Dashboard = ({ onLogout }: { onLogout: () => void }) => {
                 <span className="font-semibold text-sm">Stockage</span>
               </div>
               <span className="text-xs text-muted-foreground">
-                {formatFileSize(totalUsed)} / 30 GB
+                {formatFileSize(totalUsed)} / 1000 GB
               </span>
             </div>
             <Progress value={usedPercent} className="h-3 bg-muted [&>div]:bg-gradient-to-r [&>div]:from-primary [&>div]:to-secondary" />
@@ -202,6 +214,15 @@ const Dashboard = ({ onLogout }: { onLogout: () => void }) => {
           )}
         </div>
       </div>
+
+      {/* Persistent Audio Player */}
+      {audioTrack && (
+        <AudioPlayer
+          src={audioTrack.url}
+          title={audioTrack.title}
+          onClose={() => setAudioTrack(null)}
+        />
+      )}
     </div>
   );
 };

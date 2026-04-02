@@ -75,7 +75,13 @@ export function FilePreview({ fileName }: FilePreviewProps) {
   if (type === 'audio') {
     return (
       <div className="mt-2">
-        <audio src={url} controls className="w-full h-10" preload="metadata" />
+        <button
+          onClick={() => window.dispatchEvent(new CustomEvent('lomba-play-audio', { detail: { url, title: fileName } }))}
+          className="flex items-center gap-2 px-3 py-2 rounded-lg bg-primary/10 hover:bg-primary/20 transition-colors text-sm text-primary font-medium w-full"
+        >
+          <Music className="w-4 h-4" />
+          ▶ Écouter — {fileName.replace(/\.[^/.]+$/, '')}
+        </button>
       </div>
     );
   }
