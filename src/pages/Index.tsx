@@ -1,15 +1,26 @@
-import { useState } from 'react';
-import Login from './Login';
+import { useAuth } from '@/hooks/useAuth';
+import { useSessionTracker } from '@/hooks/useSessionTracker';
+import Auth from './Auth';
 import Dashboard from './Dashboard';
 
 const Index = () => {
-  const [authed, setAuthed] = useState(() => localStorage.getItem('lomba_auth') === 'true');
+  const { user, loading, signIn, signUp, signOut } = useAuth();
 
-  if (!authed) {
-    return <Login onLogin={() => setAuthed(true)} />;
+  useSessionTracker(user);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-primary text-lg animate-pulse">Chargement...</div>
+      </div>
+    );
   }
 
-  return <Dashboard onLogout={() => setAuthed(false)} />;
+  if (!user) {
+    return <Auth onSignIn={signIn} onSignUp={signUp} />;
+  }
+
+  return <Dashboard user={user} onLogout={signOut} />;
 };
 
 export default Index;
