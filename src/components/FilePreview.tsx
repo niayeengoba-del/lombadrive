@@ -29,9 +29,10 @@ export function getFileIcon(name: string) {
 
 interface FilePreviewProps {
   fileName: string;
+  storagePath?: string;
 }
 
-export function FilePreview({ fileName }: FilePreviewProps) {
+export function FilePreview({ fileName, storagePath = 'files' }: FilePreviewProps) {
   const [url, setUrl] = useState<string | null>(null);
   const [showPreview, setShowPreview] = useState(false);
   const type = getFileType(fileName);
@@ -41,12 +42,12 @@ export function FilePreview({ fileName }: FilePreviewProps) {
     if (previewable.includes(type)) {
       supabase.storage
         .from(BUCKET)
-        .createSignedUrl(`files/${fileName}`, 3600)
+        .createSignedUrl(`${storagePath}/${fileName}`, 3600)
         .then(({ data }) => {
           if (data?.signedUrl) setUrl(data.signedUrl);
         });
     }
-  }, [fileName, type]);
+  }, [fileName, type, storagePath]);
 
   if (!url) return null;
 
