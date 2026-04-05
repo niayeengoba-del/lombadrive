@@ -2,7 +2,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 export { supabase };
 
-export const MAX_STORAGE_BYTES = 1000 * 1024 * 1024 * 1024; // 1000GB
+export const MAX_STORAGE_BYTES = 10010 * 1024 * 1024 * 1024; // 10010GB
 
 export function formatFileSize(bytes: number): string {
   if (bytes === 0) return '0 B';

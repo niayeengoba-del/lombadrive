@@ -1,15 +1,17 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase, MAX_STORAGE_BYTES, formatFileSize } from '@/lib/supabase';
 import { toast } from '@/hooks/use-toast';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import {
-  Upload, Download, Trash2, LogOut, HardDrive, Shield,
+  Upload, Download, Trash2, LogOut, HardDrive, Shield, Search,
 } from 'lucide-react';
-import { useRef } from 'react';
 import { FilePreview, getFileIcon } from '@/components/FilePreview';
 import { AudioPlayer } from '@/components/AudioPlayer';
+import { BoostAnimation } from '@/components/BoostAnimation';
+import { SystemIndicators } from '@/components/SystemIndicators';
+import { Input } from '@/components/ui/input';
 
 interface FileItem {
   name: string;
@@ -20,16 +22,17 @@ interface FileItem {
 
 const BUCKET = 'lomba-drive';
 
-
 const Dashboard = ({ onLogout }: { onLogout: () => void }) => {
   const [files, setFiles] = useState<FileItem[]>([]);
   const [totalUsed, setTotalUsed] = useState(0);
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [dragOver, setDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [audioTrack, setAudioTrack] = useState<{ url: string; title: string } | null>(null);
+  const [ramBoosted, setRamBoosted] = useState(() => localStorage.getItem('lomba_ram_boost') === '1');
+  const [searchQuery, setSearchQuery] = useState('');
 
-  // Listen for audio play events from FilePreview
   useEffect(() => {
     const handler = (e: Event) => {
       const detail = (e as CustomEvent).detail;
@@ -43,60 +46,50 @@ const Dashboard = ({ onLogout }: { onLogout: () => void }) => {
     const { data, error } = await supabase.storage.from(BUCKET).list('files', {
       sortBy: { column: 'created_at', order: 'desc' },
     });
-    if (error) {
-      console.error('Error fetching files:', error);
-      return;
-    }
+    if (error) { console.error(error); return; }
     const items: FileItem[] = (data || [])
       .filter((f) => f.name && f.id)
-      .map((f) => ({
-        name: f.name,
-        size: f.metadata?.size || 0,
-        created_at: f.created_at || '',
-        id: f.id || f.name,
-      }));
-    // Sort by size descending
+      .map((f) => ({ name: f.name, size: f.metadata?.size || 0, created_at: f.created_at || '', id: f.id || f.name }));
     items.sort((a, b) => b.size - a.size);
     setFiles(items);
     setTotalUsed(items.reduce((sum, f) => sum + f.size, 0));
   }, []);
 
-  useEffect(() => {
-    fetchFiles();
-  }, [fetchFiles]);
+  useEffect(() => { fetchFiles(); }, [fetchFiles]);
 
   const handleUpload = async (fileList: FileList | null) => {
     if (!fileList || fileList.length === 0) return;
     setUploading(true);
+    const total = fileList.length;
+    let completed = 0;
 
     for (const file of Array.from(fileList)) {
       if (totalUsed + file.size > MAX_STORAGE_BYTES) {
         toast({ title: 'Espace insuffisant', description: `Pas assez d'espace pour ${file.name}`, variant: 'destructive' });
         continue;
       }
+      setUploadProgress(Math.round((completed / total) * 100));
       const { error } = await supabase.storage.from(BUCKET).upload(`files/${file.name}`, file, { upsert: true });
       if (error) {
         toast({ title: 'Erreur', description: error.message, variant: 'destructive' });
       } else {
         toast({ title: 'Diarrama ! Fichier sécurisé.', description: file.name });
       }
+      completed++;
+      setUploadProgress(Math.round((completed / total) * 100));
     }
 
     setUploading(false);
+    setUploadProgress(0);
     fetchFiles();
   };
 
   const handleDownload = async (name: string) => {
     const { data, error } = await supabase.storage.from(BUCKET).download(`files/${name}`);
-    if (error) {
-      toast({ title: 'Erreur', description: error.message, variant: 'destructive' });
-      return;
-    }
+    if (error) { toast({ title: 'Erreur', description: error.message, variant: 'destructive' }); return; }
     const url = URL.createObjectURL(data);
     const a = document.createElement('a');
-    a.href = url;
-    a.download = name;
-    a.click();
+    a.href = url; a.download = name; a.click();
     URL.revokeObjectURL(url);
   };
 
@@ -111,6 +104,10 @@ const Dashboard = ({ onLogout }: { onLogout: () => void }) => {
   };
 
   const usedPercent = Math.min((totalUsed / MAX_STORAGE_BYTES) * 100, 100);
+  const totalUsedGb = totalUsed / (1024 * 1024 * 1024);
+  const filteredFiles = searchQuery
+    ? files.filter((f) => f.name.toLowerCase().includes(searchQuery.toLowerCase()))
+    : files;
 
   return (
     <div className="min-h-screen bg-background">
@@ -128,17 +125,20 @@ const Dashboard = ({ onLogout }: { onLogout: () => void }) => {
         </Button>
       </header>
 
-      <div className="px-4 py-6 space-y-6 max-w-2xl mx-auto">
+      <div className="px-4 py-6 space-y-4 max-w-2xl mx-auto">
+        {/* System Indicators */}
+        <SystemIndicators ramBoosted={ramBoosted} cloudUsedGb={totalUsedGb} />
+
         {/* Storage Progress */}
         <Card className="bg-card border-border">
           <CardContent className="p-5 space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <HardDrive className="w-5 h-5 text-primary" />
-                <span className="font-semibold text-sm">Stockage</span>
+                <span className="font-semibold text-sm">Stockage Cloud</span>
               </div>
               <span className="text-xs text-muted-foreground">
-                {formatFileSize(totalUsed)} / 1000 GB
+                {formatFileSize(totalUsed)} / 10 010 Go
               </span>
             </div>
             <Progress value={usedPercent} className="h-3 bg-muted [&>div]:bg-gradient-to-r [&>div]:from-primary [&>div]:to-secondary" />
@@ -148,6 +148,15 @@ const Dashboard = ({ onLogout }: { onLogout: () => void }) => {
             </div>
           </CardContent>
         </Card>
+
+        {/* RAM Boost */}
+        {!ramBoosted && (
+          <Card className="bg-card border-border">
+            <CardContent className="p-5">
+              <BoostAnimation onComplete={() => { setRamBoosted(true); localStorage.setItem('lomba_ram_boost', '1'); }} />
+            </CardContent>
+          </Card>
+        )}
 
         {/* Upload Area */}
         <div
@@ -160,10 +169,22 @@ const Dashboard = ({ onLogout }: { onLogout: () => void }) => {
           onClick={() => fileInputRef.current?.click()}
         >
           <Upload className="w-10 h-10 text-primary mx-auto mb-3" />
-          <p className="text-sm font-medium">
-            {uploading ? 'Envoi en cours...' : 'Glissez vos fichiers ici'}
-          </p>
-          <p className="text-xs text-muted-foreground mt-1">ou cliquez pour sélectionner</p>
+          {uploading ? (
+            <div className="space-y-2">
+              <p className="text-sm font-medium">Envoi en cours... {uploadProgress}%</p>
+              <div className="w-full h-2 bg-muted rounded-full overflow-hidden max-w-xs mx-auto">
+                <div
+                  className="h-full bg-gradient-to-r from-primary to-secondary transition-all duration-300"
+                  style={{ width: `${uploadProgress}%` }}
+                />
+              </div>
+            </div>
+          ) : (
+            <>
+              <p className="text-sm font-medium">Glissez vos fichiers ici</p>
+              <p className="text-xs text-muted-foreground mt-1">ou cliquez pour sélectionner</p>
+            </>
+          )}
           <Button
             className="mt-4 bg-primary text-primary-foreground hover:bg-primary/90"
             size="sm"
@@ -172,24 +193,31 @@ const Dashboard = ({ onLogout }: { onLogout: () => void }) => {
           >
             📤 Nabde (Upload)
           </Button>
-          <input
-            ref={fileInputRef}
-            type="file"
-            multiple
-            className="hidden"
-            onChange={(e) => handleUpload(e.target.files)}
+          <input ref={fileInputRef} type="file" multiple className="hidden" onChange={(e) => handleUpload(e.target.files)} />
+        </div>
+
+        {/* Search */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input
+            placeholder="Rechercher un fichier..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-9 bg-card border-border"
           />
         </div>
 
         {/* File List */}
         <div className="space-y-2">
           <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
-            Fichiers ({files.length})
+            Fichiers ({filteredFiles.length})
           </h2>
-          {files.length === 0 ? (
-            <p className="text-center text-muted-foreground text-sm py-8">Aucun fichier. Utilisez Nabde pour commencer.</p>
+          {filteredFiles.length === 0 ? (
+            <p className="text-center text-muted-foreground text-sm py-8">
+              {searchQuery ? 'Aucun résultat.' : 'Aucun fichier. Utilisez Nabde pour commencer.'}
+            </p>
           ) : (
-            files.map((file) => (
+            filteredFiles.map((file) => (
               <Card key={file.id} className="bg-card border-border">
                 <CardContent className="p-3 space-y-0">
                   <div className="flex items-center gap-3">
@@ -215,13 +243,8 @@ const Dashboard = ({ onLogout }: { onLogout: () => void }) => {
         </div>
       </div>
 
-      {/* Persistent Audio Player */}
       {audioTrack && (
-        <AudioPlayer
-          src={audioTrack.url}
-          title={audioTrack.title}
-          onClose={() => setAudioTrack(null)}
-        />
+        <AudioPlayer src={audioTrack.url} title={audioTrack.title} onClose={() => setAudioTrack(null)} />
       )}
     </div>
   );
