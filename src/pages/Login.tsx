@@ -8,7 +8,7 @@ interface LoginProps {
   onLogin: () => void;
 }
 
-const PIN_CODE = 'lomba2025';
+const PIN_CODE = '08980898';
 
 const Login = ({ onLogin }: LoginProps) => {
   const [pin, setPin] = useState('');
