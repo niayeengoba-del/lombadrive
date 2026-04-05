@@ -1,14 +1,15 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase, MAX_STORAGE_BYTES, formatFileSize } from '@/lib/supabase';
 import { toast } from '@/hooks/use-toast';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Upload, Download, Trash2, LogOut, HardDrive, Shield } from 'lucide-react';
+import {
+  Upload, Download, Trash2, LogOut, HardDrive, Shield,
+} from 'lucide-react';
+import { useRef } from 'react';
 import { FilePreview, getFileIcon } from '@/components/FilePreview';
 import { AudioPlayer } from '@/components/AudioPlayer';
-import { AdminPanel } from '@/components/AdminPanel';
-import type { User } from '@supabase/supabase-js';
 
 interface FileItem {
   name: string;
@@ -19,52 +20,16 @@ interface FileItem {
 
 const BUCKET = 'lomba-drive';
 
-const Dashboard = ({ user, onLogout }: { user: User; onLogout: () => void }) => {
+
+const Dashboard = ({ onLogout }: { onLogout: () => void }) => {
   const [files, setFiles] = useState<FileItem[]>([]);
   const [totalUsed, setTotalUsed] = useState(0);
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [audioTrack, setAudioTrack] = useState<{ url: string; title: string } | null>(null);
-  const [showAdmin, setShowAdmin] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
 
-  // 7-tap logo detection
-  const tapTimesRef = useRef<number[]>([]);
-
-  const handleLogoTap = useCallback(() => {
-    const now = Date.now();
-    tapTimesRef.current.push(now);
-    // Keep only last 7 taps
-    if (tapTimesRef.current.length > 7) {
-      tapTimesRef.current = tapTimesRef.current.slice(-7);
-    }
-    if (tapTimesRef.current.length === 7) {
-      const elapsed = now - tapTimesRef.current[0];
-      if (elapsed < 3000) { // 7 taps within 3 seconds
-        tapTimesRef.current = [];
-        if (isAdmin) {
-          setShowAdmin(true);
-        } else {
-          toast({ title: 'Accès refusé', description: 'Vous n\'êtes pas administrateur.', variant: 'destructive' });
-        }
-      }
-    }
-  }, [isAdmin]);
-
-  // Check admin status
-  useEffect(() => {
-    const checkAdmin = async () => {
-      const { data } = await supabase.rpc('has_role', { _user_id: user.id, _role: 'admin' });
-      setIsAdmin(!!data);
-    };
-    checkAdmin();
-  }, [user.id]);
-
-  // User-scoped file path
-  const userPath = `users/${user.id}`;
-
-  // Listen for audio play events
+  // Listen for audio play events from FilePreview
   useEffect(() => {
     const handler = (e: Event) => {
       const detail = (e as CustomEvent).detail;
@@ -75,7 +40,7 @@ const Dashboard = ({ user, onLogout }: { user: User; onLogout: () => void }) => 
   }, []);
 
   const fetchFiles = useCallback(async () => {
-    const { data, error } = await supabase.storage.from(BUCKET).list(userPath, {
+    const { data, error } = await supabase.storage.from(BUCKET).list('files', {
       sortBy: { column: 'created_at', order: 'desc' },
     });
     if (error) {
@@ -90,10 +55,11 @@ const Dashboard = ({ user, onLogout }: { user: User; onLogout: () => void }) => 
         created_at: f.created_at || '',
         id: f.id || f.name,
       }));
+    // Sort by size descending
     items.sort((a, b) => b.size - a.size);
     setFiles(items);
     setTotalUsed(items.reduce((sum, f) => sum + f.size, 0));
-  }, [userPath]);
+  }, []);
 
   useEffect(() => {
     fetchFiles();
@@ -108,7 +74,7 @@ const Dashboard = ({ user, onLogout }: { user: User; onLogout: () => void }) => 
         toast({ title: 'Espace insuffisant', description: `Pas assez d'espace pour ${file.name}`, variant: 'destructive' });
         continue;
       }
-      const { error } = await supabase.storage.from(BUCKET).upload(`${userPath}/${file.name}`, file, { upsert: true });
+      const { error } = await supabase.storage.from(BUCKET).upload(`files/${file.name}`, file, { upsert: true });
       if (error) {
         toast({ title: 'Erreur', description: error.message, variant: 'destructive' });
       } else {
@@ -121,7 +87,7 @@ const Dashboard = ({ user, onLogout }: { user: User; onLogout: () => void }) => 
   };
 
   const handleDownload = async (name: string) => {
-    const { data, error } = await supabase.storage.from(BUCKET).download(`${userPath}/${name}`);
+    const { data, error } = await supabase.storage.from(BUCKET).download(`files/${name}`);
     if (error) {
       toast({ title: 'Erreur', description: error.message, variant: 'destructive' });
       return;
@@ -135,7 +101,7 @@ const Dashboard = ({ user, onLogout }: { user: User; onLogout: () => void }) => 
   };
 
   const handleDelete = async (name: string) => {
-    const { error } = await supabase.storage.from(BUCKET).remove([`${userPath}/${name}`]);
+    const { error } = await supabase.storage.from(BUCKET).remove([`files/${name}`]);
     if (error) {
       toast({ title: 'Erreur', description: error.message, variant: 'destructive' });
     } else {
@@ -150,22 +116,16 @@ const Dashboard = ({ user, onLogout }: { user: User; onLogout: () => void }) => 
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="border-b border-border px-4 py-4 flex items-center justify-between">
-        <div
-          className="flex items-center gap-2 cursor-pointer select-none"
-          onClick={handleLogoTap}
-        >
+        <div className="flex items-center gap-2">
           <Shield className="w-6 h-6 text-primary" />
           <h1 className="text-lg font-bold">
             <span className="text-primary">Lomba</span>{' '}
             <span className="text-secondary">Drive</span>
           </h1>
         </div>
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-muted-foreground truncate max-w-[120px]">{user.email}</span>
-          <Button variant="ghost" size="icon" onClick={onLogout}>
-            <LogOut className="w-5 h-5" />
-          </Button>
-        </div>
+        <Button variant="ghost" size="icon" onClick={() => { localStorage.removeItem('lomba_auth'); onLogout(); }}>
+          <LogOut className="w-5 h-5" />
+        </Button>
       </header>
 
       <div className="px-4 py-6 space-y-6 max-w-2xl mx-auto">
@@ -175,10 +135,10 @@ const Dashboard = ({ user, onLogout }: { user: User; onLogout: () => void }) => 
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <HardDrive className="w-5 h-5 text-primary" />
-                <span className="font-semibold text-sm">Stockage Cloud</span>
+                <span className="font-semibold text-sm">Stockage</span>
               </div>
               <span className="text-xs text-muted-foreground">
-                {formatFileSize(totalUsed)} / 5000 GB
+                {formatFileSize(totalUsed)} / 1000 GB
               </span>
             </div>
             <Progress value={usedPercent} className="h-3 bg-muted [&>div]:bg-gradient-to-r [&>div]:from-primary [&>div]:to-secondary" />
@@ -247,7 +207,7 @@ const Dashboard = ({ user, onLogout }: { user: User; onLogout: () => void }) => 
                       </Button>
                     </div>
                   </div>
-                  <FilePreview fileName={file.name} storagePath={userPath} />
+                  <FilePreview fileName={file.name} />
                 </CardContent>
               </Card>
             ))
@@ -255,7 +215,7 @@ const Dashboard = ({ user, onLogout }: { user: User; onLogout: () => void }) => 
         </div>
       </div>
 
-      {/* Audio Player */}
+      {/* Persistent Audio Player */}
       {audioTrack && (
         <AudioPlayer
           src={audioTrack.url}
@@ -263,9 +223,6 @@ const Dashboard = ({ user, onLogout }: { user: User; onLogout: () => void }) => 
           onClose={() => setAudioTrack(null)}
         />
       )}
-
-      {/* Admin Panel */}
-      {showAdmin && <AdminPanel onClose={() => setShowAdmin(false)} />}
     </div>
   );
 };
