@@ -41,6 +41,20 @@ const Dashboard = ({ onLogout, session }: DashboardProps) => {
   const [ramBoosted, setRamBoosted] = useState(() => localStorage.getItem('lomba_ram_boost') === '1');
   const [searchQuery, setSearchQuery] = useState('');
   const [userMatricule, setUserMatricule] = useState<string | null>(null);
+  const [showAdmin, setShowAdmin] = useState(false);
+  const tapCountRef = useRef(0);
+  const tapTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleLogoTap = () => {
+    tapCountRef.current += 1;
+    if (tapTimerRef.current) clearTimeout(tapTimerRef.current);
+    if (tapCountRef.current >= 7) {
+      tapCountRef.current = 0;
+      setShowAdmin(true);
+      return;
+    }
+    tapTimerRef.current = setTimeout(() => { tapCountRef.current = 0; }, 3000);
+  };
 
   useEffect(() => {
     const fetchProfile = async () => {
