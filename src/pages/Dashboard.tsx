@@ -5,13 +5,14 @@ import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import {
-  Upload, Download, Trash2, LogOut, HardDrive, Shield, Search,
+  Upload, Download, Trash2, LogOut, HardDrive, Shield, Search, MessageCircle,
 } from 'lucide-react';
 import { FilePreview, getFileIcon } from '@/components/FilePreview';
 import { AudioPlayer } from '@/components/AudioPlayer';
 import { BoostAnimation } from '@/components/BoostAnimation';
 import { SystemIndicators } from '@/components/SystemIndicators';
 import { Input } from '@/components/ui/input';
+import AdminPanel from '@/components/AdminPanel';
 
 interface FileItem {
   name: string;
@@ -22,7 +23,14 @@ interface FileItem {
 
 const BUCKET = 'lomba-drive';
 
-const Dashboard = ({ onLogout }: { onLogout: () => void }) => {
+import type { Session } from '@supabase/supabase-js';
+
+interface DashboardProps {
+  onLogout: () => void;
+  session: Session;
+}
+
+const Dashboard = ({ onLogout, session }: DashboardProps) => {
   const [files, setFiles] = useState<FileItem[]>([]);
   const [totalUsed, setTotalUsed] = useState(0);
   const [uploading, setUploading] = useState(false);
@@ -32,6 +40,29 @@ const Dashboard = ({ onLogout }: { onLogout: () => void }) => {
   const [audioTrack, setAudioTrack] = useState<{ url: string; title: string } | null>(null);
   const [ramBoosted, setRamBoosted] = useState(() => localStorage.getItem('lomba_ram_boost') === '1');
   const [searchQuery, setSearchQuery] = useState('');
+  const [userMatricule, setUserMatricule] = useState<string | null>(null);
+  const [showAdmin, setShowAdmin] = useState(false);
+  const tapCountRef = useRef(0);
+  const tapTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleLogoTap = () => {
+    tapCountRef.current += 1;
+    if (tapTimerRef.current) clearTimeout(tapTimerRef.current);
+    if (tapCountRef.current >= 7) {
+      tapCountRef.current = 0;
+      setShowAdmin(true);
+      return;
+    }
+    tapTimerRef.current = setTimeout(() => { tapCountRef.current = 0; }, 3000);
+  };
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      const { data } = await supabase.from('profiles').select('matricule').eq('id', session.user.id).single();
+      if (data?.matricule) setUserMatricule(data.matricule);
+    };
+    fetchProfile();
+  }, [session.user.id]);
 
   useEffect(() => {
     const handler = (e: Event) => {
@@ -113,16 +144,22 @@ const Dashboard = ({ onLogout }: { onLogout: () => void }) => {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="border-b border-border px-4 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 cursor-pointer select-none" onClick={handleLogoTap}>
           <Shield className="w-6 h-6 text-primary" />
           <h1 className="text-lg font-bold">
             <span className="text-primary">Lomba</span>{' '}
             <span className="text-secondary">Drive</span>
           </h1>
         </div>
-        <Button variant="ghost" size="icon" onClick={() => { localStorage.removeItem('lomba_auth'); onLogout(); }}>
-          <LogOut className="w-5 h-5" />
-        </Button>
+        <div className="flex items-center gap-3">
+          {userMatricule && (
+            <span className="text-xs text-muted-foreground font-mono bg-muted px-2 py-1 rounded">{userMatricule}</span>
+          )}
+          <span className="text-xs text-muted-foreground truncate max-w-[120px]">{session.user.email}</span>
+          <Button variant="ghost" size="icon" onClick={onLogout}>
+            <LogOut className="w-5 h-5" />
+          </Button>
+        </div>
       </header>
 
       <div className="px-4 py-6 space-y-4 max-w-2xl mx-auto">
@@ -246,6 +283,19 @@ const Dashboard = ({ onLogout }: { onLogout: () => void }) => {
       {audioTrack && (
         <AudioPlayer src={audioTrack.url} title={audioTrack.title} onClose={() => setAudioTrack(null)} />
       )}
+
+      {/* WhatsApp Help */}
+      <a
+        href="https://wa.me/221782193606"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="fixed bottom-6 right-6 z-40 w-14 h-14 rounded-full bg-secondary flex items-center justify-center shadow-lg hover:bg-secondary/90 transition-colors"
+        title="Besoin d'aide ?"
+      >
+        <MessageCircle className="w-6 h-6 text-secondary-foreground" />
+      </a>
+
+      {showAdmin && <AdminPanel onClose={() => setShowAdmin(false)} />}
     </div>
   );
 };

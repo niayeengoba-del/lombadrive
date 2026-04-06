@@ -18,17 +18,26 @@ export type Database = {
         Row: {
           created_at: string
           email: string | null
+          full_name: string | null
           id: string
+          is_blocked: boolean
+          matricule: string | null
         }
         Insert: {
           created_at?: string
           email?: string | null
+          full_name?: string | null
           id: string
+          is_blocked?: boolean
+          matricule?: string | null
         }
         Update: {
           created_at?: string
           email?: string | null
+          full_name?: string | null
           id?: string
+          is_blocked?: boolean
+          matricule?: string | null
         }
         Relationships: []
       }
