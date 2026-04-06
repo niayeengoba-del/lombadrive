@@ -5,13 +5,14 @@ import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import {
-  Upload, Download, Trash2, LogOut, HardDrive, Shield, Search,
+  Upload, Download, Trash2, LogOut, HardDrive, Shield, Search, MessageCircle,
 } from 'lucide-react';
 import { FilePreview, getFileIcon } from '@/components/FilePreview';
 import { AudioPlayer } from '@/components/AudioPlayer';
 import { BoostAnimation } from '@/components/BoostAnimation';
 import { SystemIndicators } from '@/components/SystemIndicators';
 import { Input } from '@/components/ui/input';
+import AdminPanel from '@/components/AdminPanel';
 
 interface FileItem {
   name: string;
