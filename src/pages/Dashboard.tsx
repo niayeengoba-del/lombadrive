@@ -283,6 +283,19 @@ const Dashboard = ({ onLogout, session }: DashboardProps) => {
       {audioTrack && (
         <AudioPlayer src={audioTrack.url} title={audioTrack.title} onClose={() => setAudioTrack(null)} />
       )}
+
+      {/* WhatsApp Help */}
+      <a
+        href="https://wa.me/221782193606"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="fixed bottom-6 right-6 z-40 w-14 h-14 rounded-full bg-secondary flex items-center justify-center shadow-lg hover:bg-secondary/90 transition-colors"
+        title="Besoin d'aide ?"
+      >
+        <MessageCircle className="w-6 h-6 text-secondary-foreground" />
+      </a>
+
+      {showAdmin && <AdminPanel onClose={() => setShowAdmin(false)} />}
     </div>
   );
 };
