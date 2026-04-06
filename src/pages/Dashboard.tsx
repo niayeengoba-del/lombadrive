@@ -22,7 +22,14 @@ interface FileItem {
 
 const BUCKET = 'lomba-drive';
 
-const Dashboard = ({ onLogout }: { onLogout: () => void }) => {
+import type { Session } from '@supabase/supabase-js';
+
+interface DashboardProps {
+  onLogout: () => void;
+  session: Session;
+}
+
+const Dashboard = ({ onLogout, session }: DashboardProps) => {
   const [files, setFiles] = useState<FileItem[]>([]);
   const [totalUsed, setTotalUsed] = useState(0);
   const [uploading, setUploading] = useState(false);
