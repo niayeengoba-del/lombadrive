@@ -39,6 +39,15 @@ const Dashboard = ({ onLogout, session }: DashboardProps) => {
   const [audioTrack, setAudioTrack] = useState<{ url: string; title: string } | null>(null);
   const [ramBoosted, setRamBoosted] = useState(() => localStorage.getItem('lomba_ram_boost') === '1');
   const [searchQuery, setSearchQuery] = useState('');
+  const [userMatricule, setUserMatricule] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      const { data } = await supabase.from('profiles').select('matricule').eq('id', session.user.id).single();
+      if (data?.matricule) setUserMatricule(data.matricule);
+    };
+    fetchProfile();
+  }, [session.user.id]);
 
   useEffect(() => {
     const handler = (e: Event) => {
