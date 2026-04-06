@@ -144,7 +144,7 @@ const Dashboard = ({ onLogout, session }: DashboardProps) => {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="border-b border-border px-4 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 cursor-pointer select-none" onClick={handleLogoTap}>
           <Shield className="w-6 h-6 text-primary" />
           <h1 className="text-lg font-bold">
             <span className="text-primary">Lomba</span>{' '}
