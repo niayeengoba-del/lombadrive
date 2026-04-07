@@ -13,6 +13,8 @@ import { BoostAnimation } from '@/components/BoostAnimation';
 import { SystemIndicators } from '@/components/SystemIndicators';
 import { Input } from '@/components/ui/input';
 import AdminPanel from '@/components/AdminPanel';
+import { Settings } from '@/components/Settings';
+import { Settings as SettingsIcon } from 'lucide-react';
 
 interface FileItem {
   name: string;
