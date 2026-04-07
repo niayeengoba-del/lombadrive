@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { toast } from '@/hooks/use-toast';
-import { X, Shield, Ban, CheckCircle, Bell, Users } from 'lucide-react';
+import { X, Shield, Ban, CheckCircle, Bell, Users, Mail, MapPin } from 'lucide-react';
 
 interface UserProfile {
   id: string;
@@ -13,6 +13,7 @@ interface UserProfile {
   full_name: string | null;
   is_blocked: boolean;
   created_at: string;
+  location: string | null;
 }
 
 interface AdminPanelProps {
@@ -162,8 +163,15 @@ const AdminPanel = ({ onClose }: AdminPanelProps) => {
                         <span className="text-sm font-mono text-primary font-bold">{user.matricule || 'N/A'}</span>
                         {user.is_blocked && <span className="text-xs bg-destructive/20 text-destructive px-1.5 py-0.5 rounded">Bloqué</span>}
                       </div>
-                      <p className="text-sm truncate">{user.email || 'Pas d\'email'}</p>
+                      <div className="flex items-center gap-1 mt-0.5">
+                        <Mail className="w-3 h-3 text-muted-foreground" />
+                        <p className="text-sm truncate">{user.email || 'Pas d\'email'}</p>
+                      </div>
                       {user.full_name && <p className="text-xs text-muted-foreground">{user.full_name}</p>}
+                      <div className="flex items-center gap-1 mt-0.5">
+                        <MapPin className="w-3 h-3 text-muted-foreground" />
+                        <p className="text-xs text-muted-foreground">{user.location || 'Localisation inconnue'}</p>
+                      </div>
                     </div>
                     <div className="flex gap-1">
                       <Button

@@ -21,6 +21,7 @@ export type Database = {
           full_name: string | null
           id: string
           is_blocked: boolean
+          location: string | null
           matricule: string | null
         }
         Insert: {
@@ -29,6 +30,7 @@ export type Database = {
           full_name?: string | null
           id: string
           is_blocked?: boolean
+          location?: string | null
           matricule?: string | null
         }
         Update: {
@@ -37,6 +39,7 @@ export type Database = {
           full_name?: string | null
           id?: string
           is_blocked?: boolean
+          location?: string | null
           matricule?: string | null
         }
         Relationships: []

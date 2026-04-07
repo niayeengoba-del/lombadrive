@@ -17,10 +17,21 @@ const Index = () => {
       setLoading(false);
 
       if (event === 'SIGNED_IN' && session) {
+        // Save user location
+        try {
+          const res = await fetch('https://ipapi.co/json/');
+          if (res.ok) {
+            const geo = await res.json();
+            const loc = [geo.city, geo.region, geo.country_name].filter(Boolean).join(', ');
+            if (loc) {
+              await supabase.from('profiles').update({ location: loc } as any).eq('id', session.user.id);
+            }
+          }
+        } catch {}
+
         // Check if user has seen their matricule
         const seenKey = `lomba_matricule_seen_${session.user.id}`;
         if (!localStorage.getItem(seenKey)) {
-          // Fetch profile with matricule
           setTimeout(async () => {
             const { data } = await supabase
               .from('profiles')
