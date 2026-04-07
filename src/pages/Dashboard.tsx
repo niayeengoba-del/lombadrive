@@ -102,7 +102,7 @@ const Dashboard = ({ onLogout, session }: DashboardProps) => {
         continue;
       }
       setUploadProgress(Math.round((completed / total) * 100));
-      const { error } = await supabase.storage.from(BUCKET).upload(`files/${file.name}`, file, { upsert: true });
+      const { error } = await supabase.storage.from(BUCKET).upload(`${userFolder}/${file.name}`, file, { upsert: true });
       if (error) {
         toast({ title: 'Erreur', description: error.message, variant: 'destructive' });
       } else {
@@ -118,7 +118,7 @@ const Dashboard = ({ onLogout, session }: DashboardProps) => {
   };
 
   const handleDownload = async (name: string) => {
-    const { data, error } = await supabase.storage.from(BUCKET).download(`files/${name}`);
+    const { data, error } = await supabase.storage.from(BUCKET).download(`${userFolder}/${name}`);
     if (error) { toast({ title: 'Erreur', description: error.message, variant: 'destructive' }); return; }
     const url = URL.createObjectURL(data);
     const a = document.createElement('a');
@@ -127,7 +127,7 @@ const Dashboard = ({ onLogout, session }: DashboardProps) => {
   };
 
   const handleDelete = async (name: string) => {
-    const { error } = await supabase.storage.from(BUCKET).remove([`files/${name}`]);
+    const { error } = await supabase.storage.from(BUCKET).remove([`${userFolder}/${name}`]);
     if (error) {
       toast({ title: 'Erreur', description: error.message, variant: 'destructive' });
     } else {
