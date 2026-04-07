@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import {
-  Settings as SettingsIcon, Star, Info, MessageCircle, Music, Shield, ChevronRight, X,
-  Volume2, Bass, Gauge, FileText, ExternalLink,
+  Settings as SettingsIcon, Star, Info, MessageCircle, Music, ChevronRight, X,
+  Volume2, Gauge, FileText,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
