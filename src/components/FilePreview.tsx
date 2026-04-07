@@ -29,9 +29,10 @@ export function getFileIcon(name: string) {
 
 interface FilePreviewProps {
   fileName: string;
+  userId?: string;
 }
 
-export function FilePreview({ fileName }: FilePreviewProps) {
+export function FilePreview({ fileName, userId }: FilePreviewProps) {
   const [url, setUrl] = useState<string | null>(null);
   const [showPreview, setShowPreview] = useState(false);
   const type = getFileType(fileName);
@@ -39,14 +40,15 @@ export function FilePreview({ fileName }: FilePreviewProps) {
   useEffect(() => {
     const previewable: typeof type[] = ['image', 'video', 'audio', 'pdf', 'document'];
     if (previewable.includes(type)) {
+      const folder = userId ? `user_${userId}` : 'files';
       supabase.storage
         .from(BUCKET)
-        .createSignedUrl(`files/${fileName}`, 3600)
+        .createSignedUrl(`${folder}/${fileName}`, 3600)
         .then(({ data }) => {
           if (data?.signedUrl) setUrl(data.signedUrl);
         });
     }
-  }, [fileName, type]);
+  }, [fileName, type, userId]);
 
   if (!url) return null;
 

@@ -274,7 +274,7 @@ const Dashboard = ({ onLogout, session }: DashboardProps) => {
                       </Button>
                     </div>
                   </div>
-                  <FilePreview fileName={file.name} />
+                  <FilePreview fileName={file.name} userId={session.user.id} />
                 </CardContent>
               </Card>
             ))
