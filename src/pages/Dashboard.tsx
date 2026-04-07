@@ -73,8 +73,10 @@ const Dashboard = ({ onLogout, session }: DashboardProps) => {
     return () => window.removeEventListener('lomba-play-audio', handler);
   }, []);
 
+  const userFolder = `user_${session.user.id}`;
+
   const fetchFiles = useCallback(async () => {
-    const { data, error } = await supabase.storage.from(BUCKET).list('files', {
+    const { data, error } = await supabase.storage.from(BUCKET).list(userFolder, {
       sortBy: { column: 'created_at', order: 'desc' },
     });
     if (error) { console.error(error); return; }
@@ -84,7 +86,7 @@ const Dashboard = ({ onLogout, session }: DashboardProps) => {
     items.sort((a, b) => b.size - a.size);
     setFiles(items);
     setTotalUsed(items.reduce((sum, f) => sum + f.size, 0));
-  }, []);
+  }, [userFolder]);
 
   useEffect(() => { fetchFiles(); }, [fetchFiles]);
 
@@ -100,7 +102,7 @@ const Dashboard = ({ onLogout, session }: DashboardProps) => {
         continue;
       }
       setUploadProgress(Math.round((completed / total) * 100));
-      const { error } = await supabase.storage.from(BUCKET).upload(`files/${file.name}`, file, { upsert: true });
+      const { error } = await supabase.storage.from(BUCKET).upload(`${userFolder}/${file.name}`, file, { upsert: true });
       if (error) {
         toast({ title: 'Erreur', description: error.message, variant: 'destructive' });
       } else {
@@ -116,7 +118,7 @@ const Dashboard = ({ onLogout, session }: DashboardProps) => {
   };
 
   const handleDownload = async (name: string) => {
-    const { data, error } = await supabase.storage.from(BUCKET).download(`files/${name}`);
+    const { data, error } = await supabase.storage.from(BUCKET).download(`${userFolder}/${name}`);
     if (error) { toast({ title: 'Erreur', description: error.message, variant: 'destructive' }); return; }
     const url = URL.createObjectURL(data);
     const a = document.createElement('a');
@@ -125,7 +127,7 @@ const Dashboard = ({ onLogout, session }: DashboardProps) => {
   };
 
   const handleDelete = async (name: string) => {
-    const { error } = await supabase.storage.from(BUCKET).remove([`files/${name}`]);
+    const { error } = await supabase.storage.from(BUCKET).remove([`${userFolder}/${name}`]);
     if (error) {
       toast({ title: 'Erreur', description: error.message, variant: 'destructive' });
     } else {
@@ -272,7 +274,7 @@ const Dashboard = ({ onLogout, session }: DashboardProps) => {
                       </Button>
                     </div>
                   </div>
-                  <FilePreview fileName={file.name} />
+                  <FilePreview fileName={file.name} userId={session.user.id} />
                 </CardContent>
               </Card>
             ))
