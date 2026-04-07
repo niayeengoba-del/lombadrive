@@ -73,8 +73,10 @@ const Dashboard = ({ onLogout, session }: DashboardProps) => {
     return () => window.removeEventListener('lomba-play-audio', handler);
   }, []);
 
+  const userFolder = `user_${session.user.id}`;
+
   const fetchFiles = useCallback(async () => {
-    const { data, error } = await supabase.storage.from(BUCKET).list('files', {
+    const { data, error } = await supabase.storage.from(BUCKET).list(userFolder, {
       sortBy: { column: 'created_at', order: 'desc' },
     });
     if (error) { console.error(error); return; }
@@ -84,7 +86,7 @@ const Dashboard = ({ onLogout, session }: DashboardProps) => {
     items.sort((a, b) => b.size - a.size);
     setFiles(items);
     setTotalUsed(items.reduce((sum, f) => sum + f.size, 0));
-  }, []);
+  }, [userFolder]);
 
   useEffect(() => { fetchFiles(); }, [fetchFiles]);
 
