@@ -44,6 +44,7 @@ const Dashboard = ({ onLogout, session }: DashboardProps) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [userMatricule, setUserMatricule] = useState<string | null>(null);
   const [showAdmin, setShowAdmin] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const tapCountRef = useRef(0);
   const tapTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -160,6 +161,9 @@ const Dashboard = ({ onLogout, session }: DashboardProps) => {
             <span className="text-xs text-muted-foreground font-mono bg-muted px-2 py-1 rounded">{userMatricule}</span>
           )}
           <span className="text-xs text-muted-foreground truncate max-w-[120px]">{session.user.email}</span>
+          <Button variant="ghost" size="icon" onClick={() => setShowSettings(true)}>
+            <SettingsIcon className="w-5 h-5" />
+          </Button>
           <Button variant="ghost" size="icon" onClick={onLogout}>
             <LogOut className="w-5 h-5" />
           </Button>
@@ -300,6 +304,7 @@ const Dashboard = ({ onLogout, session }: DashboardProps) => {
       </a>
 
       {showAdmin && <AdminPanel onClose={() => setShowAdmin(false)} />}
+      <Settings open={showSettings} onClose={() => setShowSettings(false)} />
     </div>
   );
 };
