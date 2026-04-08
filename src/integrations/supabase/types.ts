@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      files: {
+        Row: {
+          created_at: string
+          file_name: string
+          file_path: string
+          file_size: number
+          file_type: string | null
+          id: string
+          is_media: boolean
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          file_name: string
+          file_path: string
+          file_size?: number
+          file_type?: string | null
+          id?: string
+          is_media?: boolean
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          file_name?: string
+          file_path?: string
+          file_size?: number
+          file_type?: string | null
+          id?: string
+          is_media?: boolean
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -41,6 +74,27 @@ export type Database = {
           is_blocked?: boolean
           location?: string | null
           matricule?: string | null
+        }
+        Relationships: []
+      }
+      user_quotas: {
+        Row: {
+          id: string
+          total_limit: number
+          used_storage: number
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          total_limit?: number
+          used_storage?: number
+          user_id: string
+        }
+        Update: {
+          id?: string
+          total_limit?: number
+          used_storage?: number
+          user_id?: string
         }
         Relationships: []
       }
