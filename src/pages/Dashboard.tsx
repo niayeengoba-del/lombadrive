@@ -21,6 +21,8 @@ interface FileItem {
   size: number;
   created_at: string;
   id: string;
+  file_type?: string;
+  is_media?: boolean;
 }
 
 const BUCKET = 'lomba-drive';
@@ -78,18 +80,49 @@ const Dashboard = ({ onLogout, session }: DashboardProps) => {
 
   const userFolder = `user_${session.user.id}`;
 
+  const fetchQuota = useCallback(async () => {
+    const { data } = await supabase
+      .from('user_quotas')
+      .select('used_storage, total_limit')
+      .eq('user_id', session.user.id)
+      .single();
+    if (data) {
+      setTotalUsed(data.used_storage);
+    }
+  }, [session.user.id]);
+
   const fetchFiles = useCallback(async () => {
-    const { data, error } = await supabase.storage.from(BUCKET).list(userFolder, {
-      sortBy: { column: 'created_at', order: 'desc' },
-    });
-    if (error) { console.error(error); return; }
-    const items: FileItem[] = (data || [])
-      .filter((f) => f.name && f.id)
-      .map((f) => ({ name: f.name, size: f.metadata?.size || 0, created_at: f.created_at || '', id: f.id || f.name }));
-    items.sort((a, b) => b.size - a.size);
-    setFiles(items);
-    setTotalUsed(items.reduce((sum, f) => sum + f.size, 0));
-  }, [userFolder]);
+    // Fetch from files table (indexed metadata)
+    const { data: dbFiles } = await supabase
+      .from('files')
+      .select('id, file_name, file_path, file_size, file_type, is_media, created_at')
+      .eq('user_id', session.user.id)
+      .order('file_size', { ascending: false });
+
+    if (dbFiles && dbFiles.length > 0) {
+      const items: FileItem[] = dbFiles.map((f: any) => ({
+        name: f.file_name,
+        size: f.file_size,
+        created_at: f.created_at,
+        id: f.id,
+        file_type: f.file_type,
+        is_media: f.is_media,
+      }));
+      setFiles(items);
+    } else {
+      // Fallback: list from storage directly
+      const { data, error } = await supabase.storage.from(BUCKET).list(userFolder, {
+        sortBy: { column: 'created_at', order: 'desc' },
+      });
+      if (error) { console.error(error); return; }
+      const items: FileItem[] = (data || [])
+        .filter((f) => f.name && f.id)
+        .map((f) => ({ name: f.name, size: f.metadata?.size || 0, created_at: f.created_at || '', id: f.id || f.name }));
+      items.sort((a, b) => b.size - a.size);
+      setFiles(items);
+    }
+    fetchQuota();
+  }, [userFolder, session.user.id, fetchQuota]);
 
   useEffect(() => { fetchFiles(); }, [fetchFiles]);
 
@@ -100,15 +133,24 @@ const Dashboard = ({ onLogout, session }: DashboardProps) => {
     let completed = 0;
 
     for (const file of Array.from(fileList)) {
+      // Check quota before upload
       if (totalUsed + file.size > MAX_STORAGE_BYTES) {
         toast({ title: 'Espace insuffisant', description: `Pas assez d'espace pour ${file.name}`, variant: 'destructive' });
         continue;
       }
       setUploadProgress(Math.round((completed / total) * 100));
-      const { error } = await supabase.storage.from(BUCKET).upload(`${userFolder}/${file.name}`, file, { upsert: true });
+      const filePath = `${userFolder}/${file.name}`;
+      const { error } = await supabase.storage.from(BUCKET).upload(filePath, file, { upsert: true });
       if (error) {
         toast({ title: 'Erreur', description: error.message, variant: 'destructive' });
       } else {
+        // Register file in files table for indexing + quota tracking
+        await supabase.from('files').insert({
+          user_id: session.user.id,
+          file_name: file.name,
+          file_path: filePath,
+          file_size: file.size,
+        } as any);
         toast({ title: 'Diarrama ! Fichier sécurisé.', description: file.name });
       }
       completed++;
@@ -134,6 +176,8 @@ const Dashboard = ({ onLogout, session }: DashboardProps) => {
     if (error) {
       toast({ title: 'Erreur', description: error.message, variant: 'destructive' });
     } else {
+      // Also remove from files table (triggers quota decrease)
+      await supabase.from('files').delete().eq('user_id', session.user.id).eq('file_name', name);
       toast({ title: 'Fichier supprimé', description: name });
       fetchFiles();
     }
