@@ -129,37 +129,45 @@ const Dashboard = ({ onLogout, session }: DashboardProps) => {
   const handleUpload = async (fileList: FileList | null) => {
     if (!fileList || fileList.length === 0) return;
     setUploading(true);
-    const total = fileList.length;
+    const fileArr = Array.from(fileList);
+    const total = fileArr.length;
     let completed = 0;
 
-    for (const file of Array.from(fileList)) {
-      // Check quota before upload
+    // Upload up to 3 files in parallel for speed
+    const CONCURRENCY = 3;
+    const uploadOne = async (file: File) => {
       if (totalUsed + file.size > MAX_STORAGE_BYTES) {
         toast({ title: 'Espace insuffisant', description: `Pas assez d'espace pour ${file.name}`, variant: 'destructive' });
-        continue;
+        return;
       }
-      setUploadProgress(Math.round((completed / total) * 100));
       const filePath = `${userFolder}/${file.name}`;
       const { error } = await supabase.storage.from(BUCKET).upload(filePath, file, { upsert: true });
       if (error) {
         toast({ title: 'Erreur', description: error.message, variant: 'destructive' });
       } else {
-        // Register file in files table for indexing + quota tracking
-        await supabase.from('files').insert({
+        // Register in DB (fire and forget for speed, trigger handles quota)
+        supabase.from('files').insert({
           user_id: session.user.id,
           file_name: file.name,
           file_path: filePath,
           file_size: file.size,
-        } as any);
+        } as any).then(() => {});
         toast({ title: 'Diarrama ! Fichier sécurisé.', description: file.name });
       }
       completed++;
       setUploadProgress(Math.round((completed / total) * 100));
+    };
+
+    // Process in batches of CONCURRENCY
+    for (let i = 0; i < fileArr.length; i += CONCURRENCY) {
+      const batch = fileArr.slice(i, i + CONCURRENCY);
+      await Promise.all(batch.map(uploadOne));
     }
 
     setUploading(false);
     setUploadProgress(0);
-    fetchFiles();
+    // Small delay to let DB triggers complete
+    setTimeout(() => fetchFiles(), 500);
   };
 
   const handleDownload = async (name: string) => {
